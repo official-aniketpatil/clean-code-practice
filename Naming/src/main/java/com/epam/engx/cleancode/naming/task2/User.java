@@ -5,25 +5,25 @@ import java.util.Date;
 
 public class User {
 
-	private Date dBirth;
+	private Date birthDate;
 
-	private String sName;
+	private String userName;
 
-	private boolean bAdmin;
+	private boolean admin;
 
-	private User[] subordinateArray;
+	private User[] subordinates;
 
-	private int iR;
+	private int userRating;
 
-	public User(String sName) {
-		super();
-		this.sName = sName;
+	public User(String userName) {
+		
+		this.userName = userName;
 	}
 
 	@Override
 	public String toString() {
-		return "User [dBirth=" + dBirth + ", sName=" + sName + ", bAdmin=" + bAdmin + ", subordinateArray="
-				+ Arrays.toString(subordinateArray) + ", iRating=" + iR + "]";
+		return "User [Birth Date=" + birthDate + ", User Name=" + userName + ", Admin=" + admin + ", Subordinates="
+				+ Arrays.toString(subordinates) + ", User Rating=" + userRating + "]";
 	}
 
 }

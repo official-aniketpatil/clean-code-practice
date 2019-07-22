@@ -4,37 +4,42 @@ import com.epam.engx.cleancode.comments.task1.thirdpartyjar.InvalidInputExceptio
 
 public class MortgageInstallmentCalculator {
 
-    /**
-     *
-     * @param p principal amount
-     * @param t term of mortgage in years
-     * @param r rate of interest
-     * @return monthly payment amount
-     */
-    public static double calculateMonthlyPayment(
-            int p, int t, double r) {
-
-        //cannot have negative loanAmount, term duration and rate of interest
-        if (p < 0 || t <= 0 || r < 0) {
+	private static void validateArguments(int principalAmount, int mortgageYears, double interestRatePercent) {
+        if (principalAmount < 0 || mortgageYears <= 0 || interestRatePercent < 0) {
             throw new InvalidInputException("Negative values are not allowed");
         }
+    }
+    private static double convertPercentToDecimal(double annualInterestRate) {
+    	return annualInterestRate / 100.0;
+    }
+    private static int convertToMonths(int year) {
+    	return year*12;
+    }
+    private static double getMonthlyInterestRate(double annualInterestRate) {
+    	return annualInterestRate / 12.0;
+    }
+    public static double getMonthlyPayment(int principleAmount, int mortgageMonths, double monthlyInterestRateInDecimal) {
+    	
+    	return (principleAmount * monthlyInterestRateInDecimal) / (1 - Math.pow(1 + monthlyInterestRateInDecimal, - mortgageMonths));
+    }
+    private static double calculateZeroRatedMonthlyPayment(int principalAmount, int mortgageMonths) {
+    	return principalAmount / mortgageMonths;
+    }
+    public static double calculateMonthlyPayment(
+        int principalAmount, int mortgageYears, double annualInterestRate) {
 
-        // Convert interest rate into a decimal - eg. 6.5% = 0.065
-        r /= 100.0;
+    	validateArguments(principalAmount, mortgageYears, annualInterestRate); 
+        double annualInterestRateInDecimal = convertPercentToDecimal(annualInterestRate);
 
-        // convert term in years to term in months
-        double tim = t * 12;
+        int mortgageMonths = convertToMonths(mortgageYears);
 
-        //for zero interest rates
-        if(r==0)
-            return  p/tim;
+        if(annualInterestRate == 0) {
+            return  calculateZeroRatedMonthlyPayment(principalAmount, mortgageMonths);
+        }
 
-        // convert into monthly rate
-        double m = r / 12.0;
+        double monthlyInterestRateInDecimal = getMonthlyInterestRate(annualInterestRateInDecimal);
 
-        // Calculate the monthly payment
-        // The Math.pow() method is used calculate values raised to a power
-        double monthlyPayment = (p * m) / (1 - Math.pow(1 + m, -tim));
+        double monthlyPayment = getMonthlyPayment(principalAmount, mortgageMonths, monthlyInterestRateInDecimal);
 
         return monthlyPayment;
     }

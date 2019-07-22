@@ -12,23 +12,23 @@ import java.util.List;
 
 public final class FileManager {
 
-    private static final String[] TYPES = {"jpg", "png"};
-    private static final String[] TYPES2 = {"pdf", "doc"};
+    private static final String[] IMAGE_TYPES = {"jpg", "png"};
+    private static final String[] DOCUMENT_TYPES = {"pdf", "doc"};
 
-    private String bp = PropertyUtil.loadProperty("basePath");
+    private String basePath = PropertyUtil.loadProperty("basePath");
 
-    public File retrieveFile(String fileName) {
+    public File getFile(String fileName) {
         validateFileType(fileName);
-        final String dirPath = bp + File.separator;
+        final String dirPath = basePath + File.separator;
         return Paths.get(dirPath, fileName).toFile();
     }
 
     public List<String> listAllImages() {
-        return files(bp, TYPES);
+        return getFilesByType(basePath, IMAGE_TYPES);
     }
 
     public List<String> listAllDocumentFiles() {
-        return files(bp, TYPES2);
+        return getFilesByType(basePath, DOCUMENT_TYPES);
     }
 
     private void validateFileType(String fileName) {
@@ -42,21 +42,21 @@ public final class FileManager {
     }
 
     private boolean isInvalidImage(String fileName) {
-        FileExtPred imageExtensionsPredicate = new FileExtPred(TYPES);
+        FileExtensionPredicate imageExtensionsPredicate = new FileExtensionPredicate(IMAGE_TYPES);
         return !imageExtensionsPredicate.test(fileName);
     }
 
     private boolean isInvalidDocument(String fileName) {
-        FileExtPred documentExtensionsPredicate = new FileExtPred(TYPES2);
+        FileExtensionPredicate documentExtensionsPredicate = new FileExtensionPredicate(DOCUMENT_TYPES);
         return !documentExtensionsPredicate.test(fileName);
     }
 
-    private List<String> files(String directoryPath, String[] allowedExtensions) {
-        final FileExtPred pred = new FileExtPred(allowedExtensions);
+    private List<String> getFilesByType(String directoryPath, String[] allowedExtensions) {
+        final FileExtensionPredicate pred = new FileExtensionPredicate(allowedExtensions);
         return Arrays.asList(directory(directoryPath).list(getFilenameFilterByPredicate(pred)));
     }
 
-    private FilenameFilter getFilenameFilterByPredicate(final FileExtPred pred) {
+    private FilenameFilter getFilenameFilterByPredicate(final FileExtensionPredicate pred) {
         return new FilenameFilter() {
             @Override
             public boolean accept(File dir, String str) {

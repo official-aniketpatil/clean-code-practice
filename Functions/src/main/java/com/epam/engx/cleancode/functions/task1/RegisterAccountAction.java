@@ -14,24 +14,42 @@ public class RegisterAccountAction {
     private PasswordChecker passwordChecker;
     private AccountManager accountManager;
 
-    public void register(Account account) {
-        if (account.getName().length() <= 5){
+    private boolean validateAccountName(Account account) {
+    	if (account.getName().length() <= 5){
             throw new WrongAccountNameException();
         }
-        String password = account.getPassword();
+    	return true;
+    }
+    private boolean validateAccountPassword(Account account) {
+    	String password = account.getPassword();
         if (password.length() <= 8) {
             if (passwordChecker.validate(password) != OK) {
                 throw new WrongPasswordException();
             }
         }
-
-        account.setCreatedDate(new Date());
-        List<Address> addresses = new ArrayList<Address>();
+        return true;
+    }
+    
+    private List<Address> getAddresses(Account account) {
+    	List<Address> addresses = new ArrayList<Address>();
         addresses.add(account.getHomeAddress());
         addresses.add(account.getWorkAddress());
         addresses.add(account.getAdditionalAddress());
         account.setAddresses(addresses);
-        accountManager.createNewAccount(account);
+        return addresses;
+    }
+    private void setDate(Account account) {
+    	account.setCreatedDate(new Date());
+    }
+    public void create(Account account) {
+    
+    		validateAccountName(account);
+    		validateAccountPassword(account);
+    	    setDate(account);
+    	    List<Address> addresses = getAddresses(account); 
+    		account.setAddresses(addresses);
+    		accountManager.createNewAccount(account);
+    	
     }
 
 
