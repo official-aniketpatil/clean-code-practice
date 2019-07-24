@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface AddressDao {
 
-    Address getHomeAddress(String userId) throws SQLException;
+    Address getHomeAddress(String userId);
 
-    List<Address> getDeliveryAddresses(String userId) throws SQLException;
+    List<Address> getDeliveryAddresses(String userId);
 
 }

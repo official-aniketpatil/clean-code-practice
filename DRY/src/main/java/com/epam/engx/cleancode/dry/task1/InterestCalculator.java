@@ -14,40 +14,46 @@ public class InterestCalculator {
 
 
     public BigDecimal calculateInterest(AccountDetails accountDetails) {
-        if (isAccountStartedAfterBonusAge(accountDetails)) {
+        if (isUserEligibleForBonus(accountDetails)) {
             return interest(accountDetails);
         } else {
             return BigDecimal.ZERO;
         }
     }
 
-    private boolean isAccountStartedAfterBonusAge(AccountDetails accountDetails) {
+    private boolean isUserEligibleForBonus(AccountDetails accountDetails) {
         return durationBetweenDatesInYears(accountDetails.getBirth(), accountDetails.getStartDate()) > BONUS_AGE;
     }
-
+    
+    private Calendar getCalendarFrom(Date from) {
+    	Calendar calendar = new GregorianCalendar();
+        calendar.setTime(from);
+        return calendar;
+    }
     private int durationBetweenDatesInYears(Date from, Date to) {
-        Calendar startCalendar = new GregorianCalendar();
-        startCalendar.setTime(from);
-        Calendar endCalendar = new GregorianCalendar();
-        endCalendar.setTime(to);
+        Calendar startCalendar = getCalendarFrom(from);
+        Calendar endCalendar =   getCalendarFrom(to);
 
         int diffYear = endCalendar.get(Calendar.YEAR) - startCalendar.get(Calendar.YEAR);
         if (endCalendar.get(Calendar.DAY_OF_YEAR) < startCalendar.get(Calendar.DAY_OF_YEAR))
             return diffYear - 1;
         return diffYear;
     }
-
+    private boolean isSeniorCitizen(int age) {
+    	if(age > AGE) {
+    		return true;
+    	}
+    	return false;
+    }
+    private double calculatePrincipleAmount(AccountDetails accountDetails) {
+    	return accountDetails.getBalance().doubleValue()* durationSinceStartDateInYears(accountDetails.getStartDate());
+    }
     private BigDecimal interest(AccountDetails accountDetails) {
         double interest = 0;
-        if (isAccountStartedAfterBonusAge(accountDetails)) {
-            if (AGE <= accountDetails.getAge()) {
-                //interest = (PrincipalAmount * DurationInYears * AnnualInterestRate) / 100
-                interest = accountDetails.getBalance().doubleValue()
-                        * durationSinceStartDateInYears(accountDetails.getStartDate()) * SENIOR_PERCENT / 100;
-            } else {
-                interest = accountDetails.getBalance().doubleValue()
-                        * durationSinceStartDateInYears(accountDetails.getStartDate()) * INTEREST_PERCENT / 100;
-            }
+        if (isSeniorCitizen(accountDetails.getAge())) {
+            interest = calculatePrincipleAmount(accountDetails) * SENIOR_PERCENT / 100;
+        }else {
+            interest = calculatePrincipleAmount(accountDetails) * INTEREST_PERCENT / 100;
         }
         return BigDecimal.valueOf(interest);
     }

@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface OrderDao {
 
-    List<Address> getOrderAddresses(String userId) throws SQLException;
+    List<Address> getOrderAddresses(String userId);
 }
