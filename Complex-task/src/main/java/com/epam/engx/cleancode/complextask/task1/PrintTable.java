@@ -15,7 +15,7 @@ public class PrintTable implements Command {
 
     private static final int ALLOWED_PARAMETERS = 1;
     private static final String SEPARATOR = " ";
-    private static final String COMMAND_INITIAL_KEYWORD = "print ";
+    private static final String COMMAND_TEXT = "print ";
     private static final String EMPTY_TABLE_MESSAGE = "Table '%s' is empty or does not exist";
 
     private View view;
@@ -30,7 +30,7 @@ public class PrintTable implements Command {
     }
 
     public boolean canProcess(String command) {
-        return command.startsWith(COMMAND_INITIAL_KEYWORD);
+        return command.startsWith(COMMAND_TEXT);
     }
 
     public void process(String input) {
@@ -56,13 +56,13 @@ public class PrintTable implements Command {
 
     private String tableToString(List<DataSet> data) {
         if (data.isEmpty()) {
-            return printEmptyTable(tableName);
+            return getEmptyTable(tableName);
         }
 
-        return printFullTable(data);
+        return getFullTable(data);
     }
 
-    private String printEmptyTable(String tableName) {
+    private String getEmptyTable(String tableName) {
         String textEmptyTable = String.format(EMPTY_TABLE_MESSAGE, tableName);
         columnWidth = calculateColumnWidthWithPadding(textEmptyTable);
         columnCount = 1;
@@ -75,7 +75,7 @@ public class PrintTable implements Command {
         return result;
     }
 
-    private String printFullTable(List<DataSet> data) {
+    private String getFullTable(List<DataSet> data) {
         columnWidth = calculateColumnWidthWithPadding(data);
         columnCount = getColumnCount(data);
 
