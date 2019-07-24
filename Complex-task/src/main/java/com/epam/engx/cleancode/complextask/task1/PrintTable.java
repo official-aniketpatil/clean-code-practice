@@ -1,5 +1,5 @@
 package com.epam.engx.cleancode.complextask.task1;
-
+import static com.epam.engx.cleancode.complextask.task1.PrintTable.TableBorders.*;
 
 
 import com.epam.engx.cleancode.complextask.task1.thirdpartyjar.Command;
@@ -7,225 +7,237 @@ import com.epam.engx.cleancode.complextask.task1.thirdpartyjar.DataSet;
 import com.epam.engx.cleancode.complextask.task1.thirdpartyjar.View;
 import com.epam.engx.cleancode.complextask.task1.thirdpartyjar.DatabaseManager;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
 
 public class PrintTable implements Command {
 
-	private static final String COMMAND_SEPARATOR = " ";
-	private static final int ALLOWED_PARAMETERS_NUMBER = 1;
-	private static final String COMMAND_TEXT = "print ";
-    
-	private View view;
-    private DatabaseManager databaseManager;
+    private static final int ALLOWED_PARAMETERS = 1;
+    private static final String SEPARATOR = " ";
+    private static final String COMMAND_INITIAL_KEYWORD = "print ";
+    private static final String EMPTY_TABLE_MESSAGE = "Table '%s' is empty or does not exist";
+
+    private View view;
+    private DatabaseManager dbManager;
     private String tableName;
+    private int columnWidth;
+    private int columnCount;
 
     public PrintTable(View view, DatabaseManager manager) {
         this.view = view;
-        this.databaseManager = manager;
+        this.dbManager = manager;
     }
+
     public boolean canProcess(String command) {
-        return command.startsWith("print ");
+        return command.startsWith(COMMAND_INITIAL_KEYWORD);
     }
-    
-    public void process(String command) {
-        validateCommand(command);
-    	tableName = getTableNameFromCommand(command);
-        List<DataSet> dataSets = databaseManager.getTableData(tableName);
-        view.write(getTableString(dataSets));
+
+    public void process(String input) {
+        validateCommand(input);
+
+        tableName = getTableNameFromCommand(input);
+        List<DataSet> data = dbManager.getTableData(tableName);
+        view.write(tableToString(data));
     }
+
     private void validateCommand(String commandString) {
-    	String[] command = commandString.split(COMMAND_SEPARATOR);
-        int commandParameters = command.length - 1;
+        String[] commandElements = commandString.split(SEPARATOR);
+        int commandParametersNumber = commandElements.length - 1;
 
-        if (commandParameters != ALLOWED_PARAMETERS_NUMBER) {
-            throw new IllegalArgumentException("incorrect number of parameters. Expected 1, but is " + (command.length - 1));
+        if (commandParametersNumber != ALLOWED_PARAMETERS) {
+            throw new IllegalArgumentException("incorrect number of parameters. Expected 1, but is " + commandParametersNumber);
         }
-
     }
+
     private String getTableNameFromCommand(String commandString) {
-        return commandString.split(COMMAND_SEPARATOR)[1];
+        return commandString.split(SEPARATOR)[1];
     }
-    private String getFullTable(List<DataSet> data) {
-    	return getHeaderOfTheTable(data) + getStringTableData(data);
-    }
-    private String getTableString(List<DataSet> data) {
-        int maxColumnSize;
-        maxColumnSize = getMaxColumnWidth(data);
-        if (maxColumnSize == 0) {
-            return getEmptyTable(tableName);
-        } else {
-            return getFullTable(data);
+
+    private String tableToString(List<DataSet> data) {
+        if (data.isEmpty()) {
+            return printEmptyTable(tableName);
         }
+
+        return printFullTable(data);
     }
-    private String getHorizontalBorder(int length) {
-    	String result = "";
-    	for (int i = 0; i < length; i++) {
-            result += "═";
-        }
-    	return result;
-    }
-    private String getEmptyTable(String tableName) {
-        String textEmptyTable = "║ Table '" + tableName + "' is empty or does not exist ║";
-        String result = "╔";
-        result += getHorizontalBorder(textEmptyTable.length());
-        result += "╗\n";
-        result += textEmptyTable + "\n";
-        result += "╚";
-        result += getHorizontalBorder(textEmptyTable.length());
-        result += "╝\n";
+
+    private String printEmptyTable(String tableName) {
+        String textEmptyTable = String.format(EMPTY_TABLE_MESSAGE, tableName);
+        columnWidth = calculateColumnWidthWithPadding(textEmptyTable);
+        columnCount = 1;
+        List<String> value = Collections.singletonList(textEmptyTable);
+
+        String result = printTableBorder(TOP_BORDER);
+        result += printRow(value);
+        result += printTableBorder(BOTTOM_BORDER);
+
         return result;
     }
-    private int getMaxColumnSizeByColumnName(List<DataSet> dataSets) {
-    	int maxLength=0;
-    	List<String> columnNames = dataSets.get(0).getColumnNames();
-        for (String columnName : columnNames) {
-            if (columnName.length() > maxLength) {
-                maxLength = columnName.length();
-            }
-        }
-        return maxLength;
+
+    private String printFullTable(List<DataSet> data) {
+        columnWidth = calculateColumnWidthWithPadding(data);
+        columnCount = getColumnCount(data);
+
+        String result = printTableBorder(TOP_BORDER);
+        result += printTableHeader(data);
+        result += printTableBorder(INNER_BODER);
+        result += printTableBody(data);
+        result += printTableBorder(BOTTOM_BORDER);
+
+        return result;
     }
-    private int getMaxColumnSizeByValue(List<DataSet> dataSets) {
-    	int maxLength = 0;
-    	for (DataSet dataSet : dataSets) {
-            List<Object> values = dataSet.getValues();
-            for (Object value : values) {
-                if (value instanceof String) {
-                    if (String.valueOf(value).length() > maxLength) {
-                        maxLength = String.valueOf(value).length();
-                    }
-                }
-            }
-        }
-    	return maxLength;
+
+    private int calculateColumnWidthWithPadding(List<DataSet> dataSets) {
+        int maxColumnWidth = getMaxColumnWidth(dataSets);
+        int paddingSize = (maxColumnWidth % 2 == 0) ? 2 : 3;
+
+        return maxColumnWidth + paddingSize;
     }
+
+    private int calculateColumnWidthWithPadding(String cellValue) {
+        int paddingSize = 2;
+        return cellValue.length() + paddingSize;
+    }
+
     private int getMaxColumnWidth(List<DataSet> dataSets) {
-        int maxLength = 0;
-        
-        if (dataSets.size() > 0) {
-            int maxLengthByColumnName = getMaxColumnSizeByColumnName(dataSets);
-            int maxLengthByValues = getMaxColumnSizeByValue(dataSets);
-            if(maxLengthByColumnName > maxLengthByValues) {
-            	maxLength = maxLengthByColumnName;
-            }else {
-            	maxLength = maxLengthByValues;
-            }
+        if (dataSets.isEmpty()) {
+            return 0;
         }
+
+        int maxColumnNameLength = getMaxValueLengthInRow(dataSets.get(0).getColumnNames());
+        int maxValueLength = getMaxValueLength(dataSets);
+
+        return Math.max(maxColumnNameLength, maxValueLength) ;
+    }
+
+    private int getMaxValueLength(List<DataSet> dataSets) {
+        int maxLength = 0;
+
+        for (DataSet dataSet : dataSets) {
+            List<String> values = convertObjectListToStringList(dataSet.getValues());
+            int maxLengthInRow = getMaxValueLengthInRow(values);
+            maxLength = Math.max(maxLength, maxLengthInRow);
+        }
+
         return maxLength;
     }
-    private String getBlankSpaces(int length) {
-    	String res = "";
-    	for(int i = 0; i < length; i++) {
-    		res += " ";
-    	}
-    	return res;
-    }
-    
-    private String getStringTableData(List<DataSet> dataSets) {
-        int rowsCount;
-        rowsCount = dataSets.size();
-        int maxColumnSize = getMaxColumnWidth(dataSets);
-        String result = "";
-        if (maxColumnSize % 2 == 0) {
-            maxColumnSize += 2;
-        } else {
-            maxColumnSize += 3;
+
+    private int getMaxValueLengthInRow(List<String> values) {
+        int maxLength = 0;
+
+        for (String value : values) {
+            maxLength = Math.max(value.length(), maxLength);
         }
-        int columnCount = getColumnCount(dataSets);
-        for (int row = 0; row < rowsCount; row++) {
-            List<Object> values = dataSets.get(row).getValues();
-            result += "║";
-            for (int column = 0; column < columnCount; column++) {
-                int valuesLength = String.valueOf(values.get(column)).length();
-                result += getBlankSpaces((maxColumnSize - valuesLength) / 2);
-                result += String.valueOf(values.get(column));
-                result += getBlankSpaces((maxColumnSize - valuesLength) / 2);
-                result += "║";
-            }
-            result += "\n";
-            if (row < rowsCount - 1) {
-                result += "╠";
-                for (int j = 1; j < columnCount; j++) {
-                    result += getHorizontalBorder(maxColumnSize);
-                    result += "╬";
-                }
-                result += getHorizontalBorder(maxColumnSize);
-                result += "╣\n";
-            }
-        }
-        result += "╚";
-        for (int j = 1; j < columnCount; j++) {
-            for (int i = 0; i < maxColumnSize; i++) {
-                result += "═";
-            }
-            result += "╩";
-        }
-        for (int i = 0; i < maxColumnSize; i++) {
-            result += "═";
-        }
-        result += "╝\n";
-        return result;
+
+        return maxLength;
     }
 
     private int getColumnCount(List<DataSet> dataSets) {
-        int result = 0;
-        if (dataSets.size() > 0) {
-            return dataSets.get(0).getColumnNames().size();
+        if (dataSets.isEmpty()) {
+            return 0;
         }
-        return result;
+
+        return dataSets.get(0).getColumnNames().size();
     }
 
-    private String getHeaderOfTheTable(List<DataSet> dataSets) {
-        int maxColumnSize = getMaxColumnWidth(dataSets);
-        String result = "";
-        int columnCount = getColumnCount(dataSets);
-        if (maxColumnSize % 2 == 0) {
-            maxColumnSize += 2;
-        } else {
-            maxColumnSize += 3;
-        }
-        result += "╔";
+    private String printTableBorder(TableBorders borderStyle) {
+        StringBuilder result = new StringBuilder(borderStyle.leftJoint);
         for (int j = 1; j < columnCount; j++) {
-            result += getHorizontalBorder(maxColumnSize);
-            result += "╦";
+            result.append(repeatSymbol(borderStyle.lineElement, columnWidth));
+            result.append(borderStyle.innerJoint);
         }
-        result += getHorizontalBorder(maxColumnSize);
-        result += "╗\n";
-        List<String> columnNames = dataSets.get(0).getColumnNames();
-        for (int column = 0; column < columnCount; column++) {
-            result += "║";
-            int columnNamesLength = columnNames.get(column).length();
-            if (columnNamesLength % 2 == 0) {
-                result += getBlankSpaces((maxColumnSize - columnNamesLength) / 2);
-                result += columnNames.get(column);
-                result += getBlankSpaces((maxColumnSize - columnNamesLength) / 2);
-            } else {
-            	result += getBlankSpaces((maxColumnSize - columnNamesLength) / 2);
-                result += columnNames.get(column);
-                result += getBlankSpaces((maxColumnSize - columnNamesLength) / 2);
-            }
-        }
-        result += "║\n";
 
-        //last string of the header
-        if (dataSets.size() > 0) {
-            result += "╠";
-            for (int j = 1; j < columnCount; j++) {
-                result += getHorizontalBorder(maxColumnSize);
-                result += "╬";
-            }
-            result += getHorizontalBorder(maxColumnSize);
-            result += "╣\n";
-        } else {
-            result += "╚";
-            for (int j = 1; j < columnCount; j++) {
-            	result += getHorizontalBorder(maxColumnSize);
-                result += "╩";
-            }
-            result += getHorizontalBorder(maxColumnSize);
-            result += "╝\n";
+        result.append(repeatSymbol(borderStyle.lineElement, columnWidth));
+        result.append(borderStyle.rightJoint);
+        result.append("\n");
+
+        return result.toString();
+    }
+
+    private String printTableHeader(List<DataSet> dataSets) {
+        return printRow(dataSets.get(0).getColumnNames());
+    }
+
+    private String printTableBody(List<DataSet> dataSets) {
+        String result = "";
+        int rowsCount = dataSets.size();
+
+        for (int rowNum = 0; rowNum < rowsCount; rowNum++) {
+            List<String> values = convertObjectListToStringList(dataSets.get(rowNum).getValues());
+            result += printRow(values);
+            result += printInnerTableBorderIfNeeded(rowsCount, rowNum);
+        }
+
+        return result;
+    }
+
+    private String printInnerTableBorderIfNeeded(int rowsCount, int rowNum) {
+        String result = "";
+        boolean isNotLastRow = rowNum < rowsCount - 1;
+        if (isNotLastRow) {
+            result += printTableBorder(INNER_BODER);
         }
         return result;
     }
+
+    private String printRow(List<String> values) {
+        StringBuilder result = new StringBuilder();
+        for (int columnNum = 0; columnNum < columnCount; columnNum++) {
+            result.append("║");
+            String value = values.get(columnNum);
+            result.append(printCellValue(value));
+        }
+        result.append("║\n");
+        return result.toString();
+    }
+
+    private String printCellValue(String cellValue) {
+        int valueLength = String.valueOf(cellValue).length();
+        int leftPadding = (columnWidth - valueLength) / 2;
+        int rightPadding = (valueLength % 2 == 0) ? leftPadding : leftPadding + 1;
+
+        String result = repeatSymbol(" ", leftPadding);
+        result += cellValue;
+        result += repeatSymbol(" ", rightPadding);
+
+        return result;
+    }
+
+    private String repeatSymbol(String symbol, int times) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            result.append(symbol);
+        }
+
+        return result.toString();
+    }
+
+    private List<String> convertObjectListToStringList(List<Object> values) {
+        List<String> result = new ArrayList<>(values.size());
+        for (Object value : values) {
+            result.add(String.valueOf(value));
+        }
+        return result;
+    }
+
+
+    enum TableBorders {
+        TOP_BORDER("╔", "╦", "╗", "═"),
+        INNER_BODER("╠", "╬", "╣", "═"),
+        BOTTOM_BORDER("╚", "╩", "╝", "═");
+
+        public final String leftJoint;
+        public final String innerJoint;
+        public final String rightJoint;
+        public final String lineElement;
+
+        TableBorders(String leftJoint, String innerJoint, String rightJoint, String lineElement) {
+            this.leftJoint = leftJoint;
+            this.innerJoint = innerJoint;
+            this.rightJoint = rightJoint;
+            this.lineElement = lineElement;
+        }
+    }
+
 }
